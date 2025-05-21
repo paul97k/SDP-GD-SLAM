@@ -47,9 +47,9 @@ A **Blender** file is included to generate seabed maps with varying complexity l
 * Python 3.x
 * Gazebo 9+
 
-### Setup
+### Clone Required Repositories
 
-Clone these repositories inside the appropriate environment:
+First, clone the base simulation repositories in the appropriate Ubuntu environments:
 
 ```bash
 # Ubuntu 16.04 (ROS Melodic)
@@ -60,6 +60,27 @@ git clone https://github.com/Tim-HW/HW-BlueRov2-Sonar-based-SLAM.git
 cd ~/colcon_ws/src
 git clone https://github.com/clydemcqueen/orca4.git
 ```
+
+### Replace with Modified Files
+
+> **Important**: After cloning the repositories above, replace the corresponding files and folders with the edited versions provided in **this SDP-GD-SLAM repository**.
+> These include modified launch files, model definitions, trajectory scripts, evaluation scripts, and recorded datasets required for correct simulation and analysis.
+> Some files are newly generated or corrected versions that do not exist in the original repositories.
+
+After replacing the files, build each workspace:
+
+```bash
+# For ROS Melodic
+cd ~/catkin_ws
+catkin_make
+source devel/setup.bash
+
+# For ROS2
+cd ~/colcon_ws
+colcon build --symlink-install
+source install/setup.bash
+```
+
 
 Build the workspaces accordingly.
 
