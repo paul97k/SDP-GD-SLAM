@@ -1,0 +1,124 @@
+function f_MyMain4_create_outputMaps(obj_ID, cutIdx, folderDataPath, dataFolder_OutputMapSDP, dataFolder_OutputMapSonarBased, DataFileName, trusterInput)
+
+    A= obj_ID.identification.A; 
+    B = obj_ID.identification.B;
+    dt = obj_ID.identification.dt;
+    Ts = obj_ID.downSampleFreq;
+
+    MyMain4_variables; 
+    
+    %------------------Generate file path for Data CTheta and Sonar results
+    DatafilePath     = folderDataPath           + DataFileName +'.mat';
+    CThetaFilePath   = dataFolder_OutputMapSDP     + DataFileName+'.nT_'+cutIdx+'.Ts_'+Ts+'.mat'; %get previously saved C theta
+    SonarMapFilePath = dataFolder_OutputMapSonarBased + DataFileName+'.nT_'+cutIdx+'.Ts_'+Ts+'.mat'; %get previously saved C theta
+        
+    %------------------Load data
+    objData = DataLoader(DatafilePath);
+    objData.downSampleFreq = Ts;
+    objData.computeNED_AddNoise(true);
+    objData.computeXZsonar(false);
+
+    timestampsUn = objData.sonarPositions4.timestamps0; 
+    z_positionsUn = objData.sonarPositions4.ranges0; 
+    
+    
+    %------------------Downsample 
+    % IMU, DVL, Thrusters, eulerGT, CMD, hydro forces
+    % ------------------
+    objData.DownsampleData();
+    objData.computeXZsonar(true);
+
+    sonarStruct = struct( ...
+        'timestampsUn', timestampsUn, ...
+        'z_positionsUn', z_positionsUn, ...
+        'timestamps', objData.sonarPositions4.timestamps0, ...
+        'z_positions', objData.sonarPositions4.ranges0 ...
+    );
+    
+    %------------------Set input ------------------
+    % inputVal = [objData.CMD.cmd_linear_x objData.CMD.cmd_linear_y objData.CMD.cmd_linear_z];
+    if trusterInput
+        inputs = [objData.thrusters.input.thruster0 objData.thrusters.input.thruster1 objData.thrusters.input.thruster2];
+        
+    else
+        inputVal = [objData.CMD.cmd_linear_x objData.CMD.cmd_linear_y objData.CMD.cmd_linear_z];
+        u1 = zeros(length(inputVal),3); %the x,y,z, doesnt have 0 refernce inputs
+        u2 = inputVal;
+        inputs = [u1 u2];
+    end
+    
+%------------------------------------1. measurment data:  Set Measurement ------------------
+    
+    %------------------ Cut the measurment to size cutIdx ------------------
+
+    measured_z = sonarStruct.z_positions';
+    if cutIdx>length(measured_z)
+        cutIdx = length(measured_z);
+    end
+        % measured_z = measured_z(1:cutIdx,:); %and then measurement will be also cut
+        measured_z = measured_z(1:cutIdx); %and then measurement will be also cut
+        inputs = inputs(1:cutIdx,:);
+
+
+    X_intg = objData.positionIntegrated.X_intg; % X position
+    Y_intg = objData.positionIntegrated.Y_intg; % Y position
+    Z_intg = objData.positionIntegrated.Z_intg; % Y position
+    
+
+    %here sonar and dvl measurement differs by only 1-2 elements (neglegtable)
+    measurements = {X_intg(1:length(measured_z),:) , Y_intg(1:length(measured_z),:), measured_z};
+
+    measurements{3}(measurements{3} == Inf) = 5;
+    measurements{3}(measurements{3} == -Inf) = -5;
+    measurements{3}(isnan(measurements{3})) = 5;
+    time_measurement = sonarStruct.timestamps(1:length(measured_z)); 
+
+
+
+    measurementsStruct = struct( ...
+        'timestamps', time_measurement, ...
+        'x_positions', measurements{1},...
+        'y_positions', measurements{2},...
+        'z_positions', Z_intg(1:length(measured_z),:),...
+        'depth', measurements{3}...
+    );
+    %------------------Init SDP class------------------
+    x_0 = [0 0 5 0 0 0];
+    objSDP = classSDP_GD(A, B, dt, inputs, x_0, measurements);
+    
+    nx = size(objSDP.A,1);
+    ny = 1;
+    ntheta = nx*ny;
+    
+
+    %------------------Set SDP Noise ------------------
+
+    mu_theta0 = ones(ntheta,1)*0.01;
+    mu_eta = ones(ntheta,1)*0.01;
+    sigma_v = 0.01; %output noise
+    sigma_wx0       = diag(ones(nx,1)*0.01); %process noise
+    sigma_wx        = sigma_wx0;    
+    sigma_theta0    = diag(ones(ntheta,1))*4;
+    sigma_eta       = sigma_theta0; %theta noise*
+    
+    objSDP.setNoise(mu_theta0, mu_eta, sigma_v, sigma_wx0, sigma_wx, sigma_theta0, sigma_eta);
+    
+
+
+    % % -----------------perform SDP-GD ------------------
+
+    objSDP.performSDP_GD(); %performs C for all 3 measurements
+    objSDP.mergeC() %merge to 1 C
+    estimated_C_theta = objSDP.estimated_C_theta;
+    nominalX                   =objSDP.nominalX{3};
+    timeElapse                   =objSDP.timeElapse;
+    % to do: maybe save the whole object itself
+    save(CThetaFilePath', 'estimated_C_theta',  'nominalX', 'timeElapse');
+
+
+    
+    % -----------------perform Kalman------------------
+    KalmanStruct = PerformKalman( obj_ID, inputs, measurementsStruct);
+    save(SonarMapFilePath, 'KalmanStruct');
+
+end

@@ -1,0 +1,416 @@
+clc
+clear
+% Specify the disturbance level to average over
+DisturbanceArray = [0 1 2 3 4 6 7 8 10 12];  % or whatever your disturbance level is
+xaxe = reshape([DisturbanceArray; DisturbanceArray], 1,20); 
+% 
+DisturbanceArray = [0 2 4 7 10 12];  % or whatever your disturbance level is
+xaxe = reshape([DisturbanceArray; DisturbanceArray], 1,12); 
+% xaxe = [0 0 1 1 2 2 3 3 4 4 6 6 7 7 8  10 10 12 12];
+
+% 
+% DisturbanceArray = [0 7 12];  % or whatever your disturbance level is
+% xaxe = reshape([DisturbanceArray; DisturbanceArray], 1,6); 
+% xaxe = [0 0 1 1 2 2 3 3 4 4 6 6 7 7 8  10 10 12 12];
+
+
+
+close all
+
+
+itt = 0;
+allplot1 = [];
+allplot2 = [];
+allplot3 = [];
+allplot4 = [];
+
+allMaxFreq = [];
+
+for i=1:length(DisturbanceArray)
+    Disturbance = DisturbanceArray(i);
+
+    % Create a pattern that matches all test files for that disturbance
+    FolderPath = "C:\Users\paulk\iCloudDrive\Uni\Thesis\Codes\sasan code\Result_section\";
+    addpath(FolderPath) 
+    filePattern = "Disturbance_" + Disturbance + "_Test_*.mat";
+    % filePattern = "Noise_Disturbance_" + Disturbance + "_Test_1.mat";
+    
+    filePath = FolderPath+filePattern;
+    
+    % Get the list of files that match the pattern
+    files = dir(filePath);
+    
+    % Preallocate arrays for the metrics (using one metric as an example)
+    numFiles = numel(files);
+    mse_x_all = zeros(numFiles, 1);
+    rmse_x_all = zeros(numFiles, 1);
+    mse_y_all = zeros(numFiles, 1);
+    rmse_y_all = zeros(numFiles, 1);
+    mse_depth_all = zeros(numFiles, 1);
+    rmse_depth_all = zeros(numFiles, 1);
+    R2_x_all = zeros(numFiles, 1);
+    R2_y_all = zeros(numFiles, 1);
+    R2_depth_all = zeros(numFiles, 1);
+    timeElapse_all = zeros(numFiles, 1);
+
+    
+    mse_x_kalman_all = zeros(numFiles, 1);
+    rmse_x_kalman_all = zeros(numFiles, 1);
+    mse_y_kalman_all = zeros(numFiles, 1);
+    rmse_y_kalman_all = zeros(numFiles, 1);
+    mse_depth_kalman_all = zeros(numFiles, 1);
+    rmse_depth_kalman_all = zeros(numFiles, 1);
+    R2_kalman_x_all = zeros(numFiles, 1);
+    R2_kalman_y_all = zeros(numFiles, 1);
+    R2_kalman_depth_all = zeros(numFiles, 1);
+    timeElapseKalman_all = zeros(numFiles, 1);
+
+
+
+    drift_x_sdp_all = zeros(numFiles, 1);
+    drift_y_sdp_all = zeros(numFiles, 1);
+    drift_depth_sdp_all = zeros(numFiles, 1);
+    drift_x_kalman_all = zeros(numFiles, 1);
+    drift_y_kalman_all = zeros(numFiles, 1);
+    drift_depth_kalman_all = zeros(numFiles, 1);
+
+
+    maxFreqGT_all = zeros(numFiles, 1);
+    maxFreqSDP_all = zeros(numFiles, 1);
+    maxFreqKalman_all = zeros(numFiles, 1);
+
+
+
+
+
+    
+    if numFiles ==0
+        continue
+    end
+
+    % Loop through each file and load the metrics
+    for j = 1:numFiles
+        data = load(files(j).name);
+
+
+        % if i == 8 && j==1  
+        %     disp('ha')
+        % end
+        
+        mse_x_all(j)           = data.mse_x;
+        rmse_x_all(j)          = data.rmse_x;
+        mse_y_all(j)           = data.mse_y;
+        rmse_y_all(j)          = data.rmse_y;
+        mse_depth_all(j)       = data.mse_depth;
+        rmse_depth_all(j)      = data.rmse_depth;
+        R2_x_all(j)              = data.R2(1);
+        R2_y_all(j)              = data.R2(2);
+        R2_depth_all(j)              = data.R2(3);
+        timeElapse_all(j)      = data.timeElapse;
+
+        mse_x_kalman_all(j)    = data.mse_x_kalman;
+        rmse_x_kalman_all(j)   = data.rmse_x_kalman;
+        mse_y_kalman_all(j)    = data.mse_y_kalman;
+        rmse_y_kalman_all(j)   = data.rmse_y_kalman;
+        mse_depth_kalman_all(j)= data.mse_depth_kalman;
+        rmse_depth_kalman_all(j)= data.rmse_depth_kalman;
+        R2_kalman_x_all(j)       =data.R2_kalman(1);
+        R2_kalman_y_all(j)       =data.R2_kalman(2);
+        R2_kalman_depth_all(j)       =data.R2_kalman(3);
+        timeElapseKalman_all(j)   = data.timeElapseKalman;
+
+
+        drift_x_sdp_all(j) = data.drift_x_sdp;
+        drift_y_sdp_all(j) = data.drift_y_sdp;
+        drift_depth_sdp_all(j) = data.drift_depth_sdp;
+        drift_x_kalman_all(j) = data.drift_x_kalman;
+        drift_y_kalman_all(j) = data.drift_y_kalman;
+        drift_depth_kalman_all(j) = data.drift_depth_kalman;
+
+        maxFreqGT_all(j) = data.maxFreqGT;
+        maxFreqSDP_all(j) = data.maxFreqSDP;
+        maxFreqKalman_all(j) = data.maxFreqKalman;
+        
+        itt = itt+1
+
+        
+        allplot1(itt) = data.rmse_depth;
+        allplot2(itt) = data.rmse_depth_kalman;
+        allplot3(itt) = data.R2(3);
+        allplot4(itt) = data.R2_kalman(3);
+
+
+
+    end
+    
+    % Calculate the average for each metric
+    avg_mse_x           = mean(mse_x_all);
+    avg_rmse_x          = mean(rmse_x_all);
+    avg_mse_y           = mean(mse_y_all);
+    avg_rmse_y          = mean(rmse_y_all);
+    avg_mse_depth       = mean(mse_depth_all);
+    avg_rmse_depth      = mean(rmse_depth_all);
+    avg_R2_x_all        = mean(R2_x_all);
+    avg_R2_y_all        = mean(R2_y_all);
+    avg_R2_depth_all        = mean(R2_depth_all);
+    avg_timeElapse_all       = mean(timeElapse_all);
+
+    avg_mse_x_kalman    = mean(mse_x_kalman_all);
+    avg_rmse_x_kalman   = mean(rmse_x_kalman_all);
+    avg_mse_y_kalman    = mean(mse_y_kalman_all);
+    avg_rmse_y_kalman   = mean(rmse_y_kalman_all);
+    avg_mse_depth_kalman= mean(mse_depth_kalman_all);
+    avg_rmse_depth_kalman= mean(rmse_depth_kalman_all);
+    avg_R2_kalman_x_all  = mean(R2_kalman_x_all);
+    avg_R2_kalman_y_all  = mean(R2_kalman_y_all);
+    avg_R2_kalman_depth_all  = mean(R2_kalman_depth_all);
+    avg_timeElapseKalman_all = mean(timeElapseKalman_all);
+
+
+    avg_drift_x_sdp_all = mean(drift_x_sdp_all);
+    avg_drift_y_sdp_all = mean(drift_y_sdp_all);
+    avg_drift_depth_sdp_all = mean(drift_depth_sdp_all);
+    avg_drift_x_kalman_all = mean(drift_x_kalman_all);
+    avg_drift_y_kalman_all = mean(drift_y_kalman_all);
+    avg_drift_depth_kalman_all = mean(drift_depth_kalman_all);
+
+    avg_maxFreqGT_all = mean(maxFreqGT_all); 
+    avg_maxFreqSDP_all = mean(maxFreqSDP_all); 
+    avg_maxFreqKalman_all = mean(maxFreqKalman_all); 
+
+% maxFreqGT_all
+% maxFreqSDP_all
+% maxFreqKalman_all
+allMaxFreq(i) = avg_maxFreqGT_all;
+
+  
+    % Display the average metrics
+    fprintf('\nAverages for Disturbance Level: %d\n', Disturbance);
+    fprintf('%-20s | %-15s | %-15s\n', 'Metric', 'SDP-GD', 'Sonar SLAM');
+    fprintf('%s\n', repmat('-', 1, 55));
+    fprintf('%-20s | %.10f m       | %.10f m\n', 'MSE X', avg_mse_x, avg_mse_x_kalman);
+    fprintf('%-20s | %.10f m       | %.10f m\n', 'RMSE X', avg_rmse_x, avg_rmse_x_kalman);
+    fprintf('%-20s | %.10f m       | %.10f m\n', 'MSE Y', avg_mse_y, avg_mse_y_kalman);
+    fprintf('%-20s | %.10f m       | %.10f m\n', 'RMSE Y', avg_rmse_y, avg_rmse_y_kalman);
+    fprintf('%-20s | %.10f m       | %.10f m\n', 'MSE Depth', avg_mse_depth, avg_mse_depth_kalman);
+    fprintf('%-20s | %.10f m       | %.10f m\n', 'RMSE Depth', avg_rmse_depth, avg_rmse_depth_kalman);
+    % fprintf('%-20s | %.10f         | %.10f\n', 'R² x',      avg_R2_x_all, avg_R2_kalman_x_all);
+    % fprintf('%-20s | %.10f         | %.10f\n', 'R² y',       avg_R2_y_all, avg_R2_kalman_y_all);
+    fprintf('%-20s | %.10f         | %.10f\n', 'R² depth',  avg_R2_depth_all, avg_R2_kalman_depth_all);
+    fprintf('%-20s | %.10f         | %.10f\n', 'Time elapse',  avg_timeElapse_all, avg_timeElapseKalman_all);
+
+
+    fprintf('%-20s | %.10f         | %.10f\n', 'avg drift',  avg_drift_x_sdp_all , avg_drift_x_kalman_all);
+    fprintf('%-20s | %.10f         | %.10f\n', 'avg drift',  avg_drift_y_sdp_all , avg_drift_y_kalman_all);
+    fprintf('%-20s | %.10f         | %.10f\n', 'avg drift',  avg_drift_depth_sdp_all , avg_drift_depth_kalman_all);
+    fprintf('%-20s | %.4f         | %.4f| %.4f\n', 'avg max Freq',  avg_maxFreqGT_all , avg_maxFreqSDP_all, avg_maxFreqKalman_all);
+end 
+
+% allMaxFreq
+
+
+
+uniqueDisturbances = unique(xaxe);  % Get unique complexity levels
+n = numel(uniqueDisturbances);
+
+
+% Preallocate
+mean_allplot1 = zeros(1, n);  var_allplot1 = zeros(1, n);
+mean_allplot2 = zeros(1, n);  var_allplot2 = zeros(1, n);
+mean_allplot3 = zeros(1, n);  var_allplot3 = zeros(1, n);
+mean_allplot4 = zeros(1, n);  var_allplot4 = zeros(1, n);
+
+% Distortion1_comparisonm
+
+for i = 1:n
+    idx = xaxe == uniqueDisturbances(i);   % Find indices for this disturbance
+    data1 = allplot1(idx);            % Extract the two values
+    mean_allplot1(i) = mean(data1);
+    var_allplot1(i) = var(data1);             % Unbiased sample variance (n−1)
+
+
+    % RMSE Sonar SLAM (allplot2)
+    data2 = allplot2(idx);
+    mean_allplot2(i) = mean(data2);
+    var_allplot2(i)  = var(data2);
+
+    % R² SDP-GD (allplot3)
+    data3 = allplot3(idx);
+    mean_allplot3(i) = mean(data3);
+    var_allplot3(i)  = var(data3);
+
+    % R² Sonar SLAM (allplot4)
+    data4 = allplot4(idx);
+    mean_allplot4(i) = mean(data4);
+    var_allplot4(i)  = var(data4);
+
+
+
+end
+%
+% InputDistortion0.01
+% %%
+% [allMaxFreq_sorted, sortIdx] = sort(allMaxFreq);
+% DisturbanceArray_sorted = DisturbanceArray(sortIdx);
+% xaxe = reshape([DisturbanceArray_sorted; DisturbanceArray_sorted], 1,20); 
+% xaxe = reshape([DisturbanceArray; DisturbanceArray], 1,20); 
+plotRMSE_R2_stats(unique(xaxe), xaxe, DisturbanceArray, allplot1, allplot2, allplot3, allplot4);
+
+%%
+close all
+% SDP-GD RMSE values (X, Y, Depth) 0
+rmse_sdp_gd_0 = [ 0.0068; 0.0056; 0.0129; 0.0075; 0.0087; 0.0057; 0.0022; 0.0069; 0.0090; 0.0015];
+rmse_slam_0 = [ 0.0000; 0.0000; 0.0000; 0.0000; 0.0000; 0.0000; 0.0000; 0.0000; 0.0000; 0.0000];% SDP-GD R² values
+r2_sdp_gd_0 = [ 0.9999; 0.9998; 0.9991; 0.9999; 0.9999; 0.9999; 1.0000; 1.0000; 0.9998; 1.0000];
+r2_slam_0 = [ 1.0000; 1.0000; 1.0000; 1.0000; 1.0000; 1.0000; 1.0000; 1.0000; 1.0000; 1.0000];
+
+
+
+% RMSE Depth for SDP-GD 0.01
+rmse_depth_sdp_gd_0_01 = [0.01217;0.00979;0.01581;0.01992;0.02291;0.02625;0.04899;0.04064;0.02778;0.04206];
+rmse_depth_slam_0_01 = [ 0.01272; 0.01443; 0.01290; 0.01070; 0.01350; 0.01356; 0.01373; 0.01203; 0.01100; 0.00881];
+r2_sdp_gd_0_01 = [0.99973;0.99890;0.99925;0.99933;0.99940;0.99956;0.99806;0.99912;0.99843;0.99825];
+r2_slam_0_01 = [0.99972;0.99867;0.99905;0.99967;0.99926;0.99936;0.99929;0.99952;0.99970;0.99987];
+
+
+
+% RMSE Depth for SDP-GD 0.1
+rmse_depth_sdp_gd_0_1 = [0.06445;0.09186;0.11386;0.10749;0.13493;0.14590;0.22452;0.22310;0.20873;0.32895];
+rmse_depth_slam_0_1 = [0.10592;0.11955;0.16074;0.09780;0.14134;0.13074;0.13310;0.10798;0.12370;0.23302];
+r2_sdp_gd_0_1 = [0.99973;0.99890;0.99925;0.99933;0.99940;0.99956;0.99806;0.99912;0.99843;0.99825];
+r2_slam_0_1 = [0.99972;0.99867;0.99905;0.99967;0.99926;0.99936;0.99929;0.99952;0.99970;0.99987];
+
+
+% RMSE Depth for SDP-GD 0.5
+rmse_depth_sdp_gd_0_5 = [0.36021;0.34482;0.41883;0.29738;0.61251;0.58958;0.57235;0.56100;0.50200;0.61103];
+rmse_depth_slam_0_5 = [0.50232;0.62817;0.60261;0.53211;0.87001;0.77444;0.75583;0.55464;0.47939;0.56911];
+r2_sdp_gd_0_5 = [0.89478;0.52535;0.50155;0.77214;0.81554;0.74444;0.57280;0.80268;0.60070;0.71397];
+r2_slam_0_5 = [0.70519;0.16670;0.30560;0.50400;0.69360;0.69598;0.61960;0.69037;0.56567;0.67565];
+
+
+% RMSE Depth for SDP-GD 1
+rmse_depth_sdp_gd_1 =   [0.48295;0.68822;0.72845;0.50622;0.61078;0.73017;0.80480;0.95140;0.95110;0.86839];
+rmse_depth_slam_1 =     [1.22780;0.98177;1.08717;0.96334;0.77750;1.03709;1.82541;1.30136;2.17652;2.07188];
+r2_sdp_gd_1 =           [0.84546;0.31220;0.15778;0.58389;0.71461;0.50057;0.22742;0.63714;0.35857;0.33678];
+r2_slam_1 =             [0.41660;0.06644;0.06193;0.22486;0.43502;0.36473;0.19615;0.37079;0.37079;0.42347];
+
+uniqueDisturbances = 1:10;  % Each test run index
+close all
+figure;
+hold on;
+
+% SDP-GD RMSE
+plot(uniqueDisturbances, rmse_sdp_gd_0,          'r-o', 'DisplayName', 'SDP-GD 0');
+plot(uniqueDisturbances, rmse_depth_sdp_gd_0_01, 'r-o', 'DisplayName', 'SDP-GD 0.01');
+plot(uniqueDisturbances, rmse_depth_sdp_gd_0_1,  'r-o', 'DisplayName', 'SDP-GD 0.1');
+plot(uniqueDisturbances, rmse_depth_sdp_gd_0_5,  'r-o', 'DisplayName', 'SDP-GD 0.5');
+plot(uniqueDisturbances, rmse_depth_sdp_gd_1,    'r-o', 'DisplayName', 'SDP-GD 1');
+
+% SLAM RMSE
+plot(uniqueDisturbances, rmse_slam_0,            'g--s', 'DisplayName', 'SLAM 0');
+plot(uniqueDisturbances, rmse_depth_slam_0_01,   'g--s', 'DisplayName', 'SLAM 0.01');
+plot(uniqueDisturbances, rmse_depth_slam_0_1,    'g--s', 'DisplayName', 'SLAM 0.1');
+plot(uniqueDisturbances, rmse_depth_slam_0_5,    'g--s', 'DisplayName', 'SLAM 0.5');
+plot(uniqueDisturbances, rmse_depth_slam_1,      'g--s', 'DisplayName', 'SLAM 1');
+
+xlabel('Test Run Index');
+ylabel('RMSE Depth [m]');
+title('RMSE Depth per Test Run and Distortion Level');
+legend('Location', 'northwest');
+grid on;
+
+
+figure;
+hold on;
+
+% SDP-GD R²
+plot(uniqueDisturbances, r2_sdp_gd_0,      'r-o', 'DisplayName', 'SDP-GD 0');
+plot(uniqueDisturbances, r2_sdp_gd_0_01,   'r-o', 'DisplayName', 'SDP-GD 0.01');
+plot(uniqueDisturbances, r2_sdp_gd_0_1,    'r-o', 'DisplayName', 'SDP-GD 0.1');
+plot(uniqueDisturbances, r2_sdp_gd_0_5,    'r-o', 'DisplayName', 'SDP-GD 0.5');
+plot(uniqueDisturbances, r2_sdp_gd_1,      'r-o', 'DisplayName', 'SDP-GD 1');
+
+% SLAM R²
+plot(uniqueDisturbances, r2_slam_0,        'g--s', 'DisplayName', 'SLAM 0');
+plot(uniqueDisturbances, r2_slam_0_01,     'g--s', 'DisplayName', 'SLAM 0.01');
+plot(uniqueDisturbances, r2_slam_0_1,      'g--s', 'DisplayName', 'SLAM 0.1');
+plot(uniqueDisturbances, r2_slam_0_5,      'g--s', 'DisplayName', 'SLAM 0.5');
+plot(uniqueDisturbances, r2_slam_1,        'g--s', 'DisplayName', 'SLAM 1');
+
+xlabel('Test Run Index');
+ylabel('R²');
+title('R² per Test Run and Distortion Level');
+legend('Location', 'southwest');
+grid on;
+
+
+%%
+
+function plotRMSE_R2_stats(uniqueDisturbances, xaxe, DisturbanceArray, allplot1, allplot2, allplot3, allplot4)
+% plotRMSE_R2_stats plots RMSE and R² statistics (mean ± std) across complexity levels
+%
+% Inputs:
+%   - uniqueDisturbances: vector of unique complexity/distortion levels
+%   - xaxe: vector indicating the complexity for each data point
+%   - allplot1: RMSE SDP-GD values
+%   - allplot2: RMSE Sonar SLAM values
+%   - allplot3: R² SDP-GD values
+%   - allplot4: R² Sonar SLAM values
+
+n = numel(uniqueDisturbances);
+
+% Preallocate
+mean_allplot1 = zeros(1, n);  var_allplot1 = zeros(1, n);
+mean_allplot2 = zeros(1, n);  var_allplot2 = zeros(1, n);
+mean_allplot3 = zeros(1, n);  var_allplot3 = zeros(1, n);
+mean_allplot4 = zeros(1, n);  var_allplot4 = zeros(1, n);
+
+for i = 1:n
+    idx = xaxe == uniqueDisturbances(i);
+
+    mean_allplot1(i) = mean(allplot1(idx));
+    var_allplot1(i)  = var(allplot1(idx));
+
+    mean_allplot2(i) = mean(allplot2(idx));
+    var_allplot2(i)  = var(allplot2(idx));
+
+    mean_allplot3(i) = mean(allplot3(idx));
+    var_allplot3(i)  = var(allplot3(idx));
+
+    mean_allplot4(i) = mean(allplot4(idx));
+    var_allplot4(i)  = var(allplot4(idx));
+end
+
+% --- Mean RMSE Plot ---
+figure;
+plot(DisturbanceArray, mean_allplot1, 'r-o'); hold on;
+plot(DisturbanceArray, mean_allplot2, 'b-o');
+legend('RMSE SDP-GD', 'RMSE Sonar SLAM', 'Location', 'best');
+xlabel('Complexity'); ylabel('RMSE Depth [m]');
+title('Depth RMSE vs Seabed Complexity'); grid on;
+
+% --- Mean R² Plot ---
+figure;
+plot(DisturbanceArray, mean_allplot3, 'r-o'); hold on;
+plot(DisturbanceArray, mean_allplot4, 'b-o');
+legend('R² SDP-GD', 'R² Sonar SLAM', 'Location', 'best');
+xlabel('Complexity'); ylabel('R²');
+title('Depth R² vs Seabed Complexity'); grid on;
+
+% --- RMSE with Std Dev ---
+figure;
+errorbar(DisturbanceArray, mean_allplot1, sqrt(var_allplot1), 'r-o', 'LineWidth', 1.5); hold on;
+errorbar(DisturbanceArray, mean_allplot2, sqrt(var_allplot2), 'b-o', 'LineWidth', 1.5);
+xlabel('Complexity'); ylabel('RMSE Depth [m]');
+title('RMSE Depth: SDP-GD vs Sonar SLAM (Mean ± Std Dev)');
+legend('SDP-GD', 'Sonar SLAM', 'Location', 'best'); grid on;
+
+% --- R² with Std Dev ---
+figure;
+errorbar(DisturbanceArray, mean_allplot3, sqrt(var_allplot3), 'r-o', 'LineWidth', 1.5); hold on;
+errorbar(DisturbanceArray, mean_allplot4, sqrt(var_allplot4), 'b-o', 'LineWidth', 1.5);
+xlabel('Complexity'); ylabel('R²');
+title('R²: SDP-GD vs Sonar SLAM (Mean ± Std Dev)');
+legend('SDP-GD', 'Sonar SLAM', 'Location', 'best'); grid on;
+
+end
