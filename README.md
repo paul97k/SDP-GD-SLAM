@@ -1,7 +1,8 @@
 # SDP-GD-SLAM
 
-An underwater simulation framework for evaluating SLAM algorithms using synthetic sonar, visual, and model-based approaches. The project enables reproducible experiments in complex underwater environments with tunable terrain and current conditions.
+An underwater simulation framework for evaluating SLAM algorithms using synthetic sonar, visual, and model-based approaches. 
 ---
+The project enables reproducible experiments in complex underwater environments with tunable terrain and current conditions.
 note: the development has slowed down and stopped completely
 ## Table of Contents
 
