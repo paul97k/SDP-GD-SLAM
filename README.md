@@ -182,10 +182,11 @@ You're welcome to contribute. Please fork the project, make changes on a feature
   Thesis: *Comparative Evaluation of SLAM Algorithms in Simulated Underwater Environments*
 * Supervised by: **Dr. M. (Manuel) Mazo Espinosa
  and Sasan Vakili**
-* Based on code from:
+This project builds on the following open-source repositories:
 
-  * [orca4](https://github.com/clydemcqueen/orca4)
-  * [HW-BlueRov2-Sonar-based-SLAM](https://github.com/Tim-HW/HW-BlueRov2-Sonar-based-SLAM)
+- [orca4 (MIUT fork)](https://github.com/miut-orca/orca4) – adapted for ROS2 and BlueROV2 simulation  
+- [HW-BlueRov2-Sonar-based-SLAM](https://github.com/Tim-HW/HW-BlueRov2-Sonar-based-SLAM) – sonar SLAM implementation for Desistek SAGA  
+- [ORB-SLAM2](https://github.com/raulmur/ORB_SLAM2) – for visual SLAM localization
 
 ---
 
