@@ -1,7 +1,7 @@
 # SDP-GD-SLAM
 
 An underwater simulation framework for evaluating SLAM algorithms using synthetic sonar, visual, and model-based approaches. The project enables reproducible experiments in complex underwater environments with tunable terrain and current conditions.
-
+note: the development has slowed down and stopped completely
 ---
 
 ## Table of Contents
@@ -162,7 +162,7 @@ ros2 launch orca_bringup sim_launch.py
 
 ## Support
 
-For questions or issues, open a GitLab issue in the [REMARO repository](https://gitlab.tudelft.nl/sync-lab/remaro).
+paulkarto@live.com
 
 ---
 
@@ -190,9 +190,4 @@ This project builds on the following open-source repositories:
 
 ---
 
-
-
-## Project Status
-
-**Active – May 2025**
 Currently in use for academic experimentation. Planned additions include performance evaluation under varying current profiles and real-time loop closure analysis.
